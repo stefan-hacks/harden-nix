@@ -22,9 +22,6 @@ in
     # Reusable systemd archetypes
     ./profiles/systemd-profiles.nix
 
-    # Flatpak declarative management
-    ./flatpak.nix
-
     # Security helpers
     ./security/dbus-hide-processes.nix
     ./security/operator.nix

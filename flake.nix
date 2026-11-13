@@ -19,6 +19,7 @@
         hardened-baseline = { config, pkgs, lib, ... }: {
           imports = [
             nix-flatpak.nixosModules.nix-flatpak
+            ./modules/flatpak.nix
             ./modules/default.nix
           ];
         };

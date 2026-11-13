@@ -22,7 +22,7 @@ in
       '';
     }];
 
-    services.flatpak = optionalAttrs (options ? services && options.services ? flatpak) {
+    services.flatpak = {
       # Enable the flatpak subsystem (idempotent if already enabled)
       enable = true;
 
