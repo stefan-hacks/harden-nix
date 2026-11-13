@@ -64,16 +64,14 @@ A pure-Nix flake providing **drop-in hardening modules** for NixOS services, dae
   };
 
   # Declarative Flatpak apps (already sandboxed by Flatpak itself)
-  hardening.flatpak = {
-    enable = true;
-    apps = [
-      "org.mozilla.firefox"
-      "com.brave.Browser"
-      "org.telegram.desktop"
-    ];
-    filesystemAccess = "xdg-download";
-    autoUpdate = true;
-  };
+  # Just run `flatpak search <name>`, grab the app ID, and drop it here.
+  hardening.flatpak.enable = true;
+  services.flatpak.packages = [
+    "org.mozilla.firefox"
+    "org.chromium.Chromium"
+    "com.discordapp.Discord"
+    "org.telegram.desktop"
+  ];
 
   # Opt-in strict extra hardening (may break some services — test first)
   hardening.extra.enable = false;
@@ -182,26 +180,39 @@ A pure-Nix flake providing **drop-in hardening modules** for NixOS services, dae
 
 | Module | Path | Description |
 |--------|------|-------------|
-| **Flatpak** | `modules/flatpak.nix` | Declarative Flatpak management via nix-flatpak. Apps are sandboxed by Flatpak itself — no extra hardening needed. |
+| **Flatpak** | `modules/flatpak.nix` | Security-hardened defaults for nix-flatpak. Auto-imports nix-flatpak, restricts filesystem access to `xdg-download`, and enables weekly auto-updates. |
 
-Configure your apps freely:
+Use Flatpak for desktop apps — they are already sandboxed by Flatpak itself, so no extra hardening layer is needed. Just run `flatpak search <name>`, copy the app ID, and add it to `services.flatpak.packages`:
 
 ```nix
 {
-  hardening.flatpak = {
-    enable = true;
-    apps = [
-      "org.mozilla.firefox"
-      "com.brave.Browser"
-      "org.telegram.desktop"
-      { appId = "com.obsproject.Studio"; origin = "flathub"; }
-    ];
-    filesystemAccess = "xdg-download";  # none | xdg-download | xdg-documents | home | host
-    autoUpdate = true;
-    uninstallUnmanaged = false;
-  };
+  hardening.flatpak.enable = true;
+
+  services.flatpak.packages = [
+    # Browsers
+    "org.mozilla.firefox"
+    "org.chromium.Chromium"
+    "com.brave.Browser"
+
+    # Communication
+    "com.discordapp.Discord"
+    "org.telegram.desktop"
+    "im.riot.Riot"
+
+    # Media
+    "org.videolan.VLC"
+    "io.mpv.Mpv"
+
+    # Productivity
+    "md.obsidian.Obsidian"
+    "com.visualstudio.code"
+
+    # Add anything else from `flatpak search ...`
+  ];
 }
 ```
+
+**How it works:** `hardening.flatpak.enable = true` sets secure defaults (filesystem restricted to `~/Downloads`, auto-updates weekly). You manage the app list directly via nix-flatpak's standard interface.
 
 ### 🔐 Security Helpers
 
