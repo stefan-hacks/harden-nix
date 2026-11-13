@@ -61,11 +61,11 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.enable (optionalAttrs (options ? services && options.services ? flatpak) {
     assertions = [{
-      assertion = options.services ? flatpak;
+      assertion = config.services.flatpak.enable or false;
       message = ''
-        hardening.flatpak requires nix-flatpak to be imported.
+        hardening.flatpak requires services.flatpak.enable = true.
         Add nix-flatpak.nixosModules.nix-flatpak to your system imports.
       '';
     }];
@@ -86,5 +86,5 @@ in
 
       uninstallUnmanaged = cfg.uninstallUnmanaged;
     };
-  };
+  });
 }

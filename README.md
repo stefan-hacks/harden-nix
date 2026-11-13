@@ -17,7 +17,7 @@ A pure-Nix flake providing **drop-in hardening modules** for NixOS services, dae
 | Maintains per-binary profiles with `/nix/store` hash wildcards | Modules attach directly to `systemd.services.<name>` — no path maintenance |
 | Requires binary policy compilation on target | Pure Nix evaluation — zero target-side compilation |
 | Profiles can drift across releases | Tied to NixOS module system — versioned with your flake.lock |
-| Desktop apps need complex abstraction stacks | Single `makeBwrapWrapper` helper sandboxes any package |
+| Desktop apps need complex abstraction stacks | Use Flatpak for desktop apps — already sandboxed, managed declaratively via nix-flatpak |
 
 ---
 
@@ -178,31 +178,30 @@ A pure-Nix flake providing **drop-in hardening modules** for NixOS services, dae
 |--------|---------|-----------------|
 | [rsyslog.nix](modules/services/rsyslog.nix) | `services.rsyslogd` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `StateDirectory` |
 
-### 🖥️ Desktop Applications (Bubblewrap Sandbox)
+### 📦 Flatpak Applications
 
-| Module | App | Description |
-|--------|-----|-------------|
-| [desktop/default.nix](modules/desktop/default.nix) | All below | `makeBwrapWrapper` helper with conditional Wayland/X11/D-Bus/PipeWire/GPU binds |
-| | **firefox** | Sandboxed browser, `~/.mozilla` + `~/Downloads` |
-| | **chromium** | Sandboxed browser, `~/.config/chromium` + `~/Downloads` |
-| | **brave** | Sandboxed browser, `~/.config/BraveSoftware` + `~/Downloads` |
-| | **chrome** | Sandboxed browser, `~/.config/google-chrome` + `~/Downloads` |
-| | **opera** | Sandboxed browser, `~/.config/opera` + `~/Downloads` |
-| | **vivaldi** | Sandboxed browser, `~/.config/vivaldi` + `~/Downloads` |
-| | **qutebrowser** | Sandboxed browser, `~/.config/qutebrowser` + `~/Downloads` |
-| | **thunderbird** | Sandboxed email, `~/.thunderbird` + `~/Downloads` |
-| | **geary** | Sandboxed email, `~/.config/geary` + `~/Downloads` |
-| | **evolution** | Sandboxed email/PIM, `~/.config/evolution` + `~/Downloads` |
-| | **discord** | Sandboxed chat, `~/.config/discord` + `~/Downloads` |
-| | **signal-desktop** | Sandboxed chat, `~/.config/Signal` + `~/Downloads` |
-| | **element-desktop** | Sandboxed Matrix, `~/.config/Element` + `~/Downloads` |
-| | **telegram-desktop** | Sandboxed Telegram, `~/.local/share/TelegramDesktop` + `~/Downloads` |
-| | **vscode** | Sandboxed editor, `~/.config/Code` + `~/Projects` + `~/.vscode` |
-| | **obsidian** | Sandboxed notes, `~/.config/obsidian` + `~/Documents` |
-| | **notepadqq** | Sandboxed editor, `~/.config/Notepadqq` + `~/Downloads` |
-| | **nautilus** | Sandboxed file manager, `~/.config/nautilus` + `~/Documents` |
-| | **foliate** | Sandboxed ebook reader, `~/.config/com.github.johnfactotum.Foliate` |
-| | **goldendict-ng** | Sandboxed dictionary, `~/.config/goldendict` + `~/Downloads` |
+| Module | Path | Description |
+|--------|------|-------------|
+| **Flatpak** | `modules/flatpak.nix` | Declarative Flatpak management via nix-flatpak. Apps are sandboxed by Flatpak itself — no extra hardening needed. |
+
+Configure your apps freely:
+
+```nix
+{
+  hardening.flatpak = {
+    enable = true;
+    apps = [
+      "org.mozilla.firefox"
+      "com.brave.Browser"
+      "org.telegram.desktop"
+      { appId = "com.obsproject.Studio"; origin = "flathub"; }
+    ];
+    filesystemAccess = "xdg-download";  # none | xdg-download | xdg-documents | home | host
+    autoUpdate = true;
+    uninstallUnmanaged = false;
+  };
+}
+```
 
 ### 🔐 Security Helpers
 
@@ -223,6 +222,7 @@ harden-nix/
 │   └── default.nix              # NixOS VM tests for regression testing
 └── modules/
     ├── default.nix              # Baseline preset — imports everything
+    ├── flatpak.nix              # Declarative Flatpak management
     ├── system/
     │   ├── kernel.nix           # Boot params + sysctl hardening
     │   ├── network.nix          # Network sysctl + firewall defaults
@@ -230,8 +230,6 @@ harden-nix/
     ├── profiles/
     │   └── systemd-profiles.nix # Reusable security archetypes
     ├── services/                # Per-service hardening modules
-    ├── desktop/
-    │   └── default.nix          # Desktop app bubblewrap wrappers
     └── security/
         ├── dbus-hide-processes.nix
         └── operator.nix

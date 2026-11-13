@@ -4,6 +4,7 @@ let
   testModule = { config, pkgs, lib, ... }: {
     imports = [ (import ../modules/default.nix) ];
     hardening.enable = true;
+    hardening.flatpak.enable = false;
     system.stateVersion = "26.05";
   };
 in
