@@ -182,7 +182,20 @@ A pure-Nix flake providing **drop-in hardening modules** for NixOS services, dae
 |--------|------|-------------|
 | **Flatpak** | `modules/flatpak.nix` | Security-hardened defaults for nix-flatpak. Auto-imports nix-flatpak, restricts filesystem access to `xdg-download`, and enables weekly auto-updates. |
 
-Use Flatpak for desktop apps — they are already sandboxed by Flatpak itself, so no extra hardening layer is needed. Just run `flatpak search <name>`, copy the app ID, and add it to `services.flatpak.packages`:
+Use Flatpak for desktop apps — they are already sandboxed by Flatpak itself, so no extra hardening layer is needed.
+
+#### Finding App IDs
+
+Find apps on Flathub with:
+
+```bash
+flatpak search firefox          # human-readable search
+flatpak search --json firefox   # machine-readable JSON output
+```
+
+Then copy the `application` field into your config.
+
+#### Quick Config
 
 ```nix
 {
@@ -214,20 +227,22 @@ Use Flatpak for desktop apps — they are already sandboxed by Flatpak itself, s
 
 **How it works:** `hardening.flatpak.enable = true` sets secure defaults (filesystem restricted to `~/Downloads`, auto-updates weekly). You manage the app list directly via nix-flatpak's standard interface.
 
-**Migration tool:** `nix-to-flatpak` scans your installed Nix packages and finds Flatpak equivalents:
+#### Migration Tool
+
+Scan installed Nix packages and find Flatpak equivalents:
 
 ```bash
-# Run from the flake
-nix run github:stefan-hacks/harden-nix#nix-to-flatpak
-
-# Or after adding the flake input
-nix run .#nix-to-flatpak
+# Scan all desktop packages
+nix run --refresh github:stefan-hacks/harden-nix#nix-to-flatpak
 
 # Scan specific packages
-nix run .#nix-to-flatpak firefox thunderbird vlc
+nix run github:stefan-hacks/harden-nix#nix-to-flatpak firefox thunderbird vlc
+
+# Force cache rebuild
+nix run github:stefan-hacks/harden-nix#nix-to-flatpak -- --refresh
 
 # JSON output for automation
-nix run .#nix-to-flatpak -- --json
+nix run github:stefan-hacks/harden-nix#nix-to-flatpak -- --json
 ```
 
 ### 🔐 Security Helpers
@@ -247,6 +262,11 @@ harden-nix/
 ├── README.md
 ├── checks/
 │   └── default.nix              # NixOS VM tests for regression testing
+├── examples/
+│   └── flatpak.nix              # Example declarative Flatpak configuration
+├── tools/
+│   └── flatpak-migrate/         # Migration tools
+│       └── nix-to-flatpak       # Scan installed Nix packages → Flatpak equivalents
 └── modules/
     ├── default.nix              # Baseline preset — imports everything
     ├── flatpak.nix              # Declarative Flatpak management
@@ -430,6 +450,43 @@ in
 ```
 
 > **Note:** Full Home Manager support is planned. For now, import the flake as a NixOS module.
+
+### Flatpak Migration Tool (`nix-to-flatpak`)
+
+Use the built-in migration tool to scan your installed Nix packages and find Flatpak equivalents:
+
+```bash
+# Scan all installed desktop packages for Flatpak equivalents
+# (uses local Flathub cache — rebuilds cache on first run or stale cache)
+nix run --refresh github:stefan-hacks/harden-nix#nix-to-flatpak
+
+# Or from the flake directory
+nix run .#nix-to-flatpak
+
+# Scan specific packages only
+nix run github:stefan-hacks/harden-nix#nix-to-flatpak firefox thunderbird vlc
+
+# Include non-desktop packages too
+nix run github:stefan-hacks/harden-nix#nix-to-flatpak -- --all
+
+# Force cache rebuild
+nix run github:stefan-hacks/harden-nix#nix-to-flatpak -- --refresh
+
+# JSON output for automation
+nix run github:stefan-hacks/harden-nix#nix-to-flatpak -- --json
+```
+
+**How it works:**
+1. Runs `flatpak remote-ls flathub --json` once → caches to `~/.cache/nix-to-flatpak/flathub.json` for 24 hours
+2. Reads your installed packages from:
+   - `.desktop` files in `/run/current-system/sw/share/applications` and `~/.nix-profile/share/applications`
+   - `nix path-info -r /run/current-system` (system closure)
+   - `nix path-info -r ~/.local/state/nix/profiles/home-manager` (if present)
+3. Filters out libraries, plugins, themes, SDKs, runtimes
+4. Matches remaining packages against the Flathub cache
+5. Outputs ready-to-paste `services.flatpak.packages` entries
+
+**Does not require:** sudo, nix-index, or being in the flake repo directory. Works from anywhere on a NixOS system.
 
 ---
 
