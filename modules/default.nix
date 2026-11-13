@@ -22,8 +22,8 @@ in
     # Reusable systemd archetypes
     ./profiles/systemd-profiles.nix
 
-    # Desktop application sandboxing
-    ./desktop/default.nix
+    # Flatpak declarative management
+    ./flatpak.nix
 
     # Security helpers
     ./security/dbus-hide-processes.nix
@@ -128,7 +128,6 @@ in
       hardening.kernel.enable = mkDefault true;
       hardening.network.enable = mkDefault true;
       hardening.systemd.enable = mkDefault true;
-      hardening.desktopApps.enable = mkDefault false;
     })
 
     # ─── Profile: Web Servers ───

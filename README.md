@@ -63,8 +63,17 @@ A pure-Nix flake providing **drop-in hardening modules** for NixOS services, dae
     all.enable = true;             # shortcut: enable every profile above
   };
 
-  # Opt-in desktop app sandboxing (replaces apps with bwrap wrappers)
-  hardening.desktopApps.enable = true;
+  # Declarative Flatpak apps (already sandboxed by Flatpak itself)
+  hardening.flatpak = {
+    enable = true;
+    apps = [
+      "org.mozilla.firefox"
+      "com.brave.Browser"
+      "org.telegram.desktop"
+    ];
+    filesystemAccess = "xdg-download";
+    autoUpdate = true;
+  };
 
   # Opt-in strict extra hardening (may break some services — test first)
   hardening.extra.enable = false;
