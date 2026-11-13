@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.chrony = {
-    enable = mkEnableOption "chrony hardening" // { default = true; };
+    enable = mkEnableOption "chrony hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.chrony.enable) {

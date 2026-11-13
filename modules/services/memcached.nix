@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.memcached = {
-    enable = mkEnableOption "Memcached hardening" // { default = true; };
+    enable = mkEnableOption "Memcached hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.memcached.enable) {

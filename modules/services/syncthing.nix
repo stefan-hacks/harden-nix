@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.syncthing = {
-    enable = mkEnableOption "Syncthing hardening" // { default = true; };
+    enable = mkEnableOption "Syncthing hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.syncthing.enable) {

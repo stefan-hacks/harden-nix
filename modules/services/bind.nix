@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.bind = {
-    enable = mkEnableOption "bind hardening" // { default = true; };
+    enable = mkEnableOption "bind hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.bind.enable) {

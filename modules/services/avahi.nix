@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.avahi = {
-    enable = mkEnableOption "Avahi hardening" // { default = true; };
+    enable = mkEnableOption "Avahi hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.avahi.enable) {

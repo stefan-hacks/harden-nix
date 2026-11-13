@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.wireguard = {
-    enable = mkEnableOption "WireGuard (wg-quick) hardening" // { default = true; };
+    enable = mkEnableOption "WireGuard (wg-quick) hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && (config.networking.wg-quick.interfaces != {})) {

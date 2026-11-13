@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.ntpd = {
-    enable = mkEnableOption "NTP daemon hardening" // { default = true; };
+    enable = mkEnableOption "NTP daemon hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && (config.services.ntp.enable or false)) {

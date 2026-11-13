@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.postgresql = {
-    enable = mkEnableOption "PostgreSQL hardening" // { default = true; };
+    enable = mkEnableOption "PostgreSQL hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.postgresql.enable) {

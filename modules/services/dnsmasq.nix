@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.dnsmasq = {
-    enable = mkEnableOption "dnsmasq hardening" // { default = true; };
+    enable = mkEnableOption "dnsmasq hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.dnsmasq.enable) {

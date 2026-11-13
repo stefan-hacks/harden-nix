@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.openvpn = {
-    enable = mkEnableOption "OpenVPN server hardening" // { default = true; };
+    enable = mkEnableOption "OpenVPN server hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && (config.services.openvpn.servers != {})) {

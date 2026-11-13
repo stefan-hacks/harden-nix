@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.redis = {
-    enable = mkEnableOption "Redis hardening" // { default = true; };
+    enable = mkEnableOption "Redis hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.redis.servers != {}) {

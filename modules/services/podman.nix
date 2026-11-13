@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.podman = {
-    enable = mkEnableOption "Podman hardening" // { default = true; };
+    enable = mkEnableOption "Podman hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.virtualisation.podman.enable) {

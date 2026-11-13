@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.caddy = {
-    enable = mkEnableOption "Caddy hardening" // { default = true; };
+    enable = mkEnableOption "Caddy hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.caddy.enable) {

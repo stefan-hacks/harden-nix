@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.fail2ban = {
-    enable = mkEnableOption "fail2ban hardening" // { default = true; };
+    enable = mkEnableOption "fail2ban hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.fail2ban.enable) {

@@ -45,8 +45,23 @@ A pure-Nix flake providing **drop-in hardening modules** for NixOS services, dae
 
 ```nix
 { config, pkgs, ... }: {
-  # Enable the full baseline (kernel + network + systemd profiles)
+  # System-level hardening (kernel, network, systemd archetypes)
   hardening.enable = true;
+
+  # Pick the service profiles you need — hardening applies automatically
+  # when the underlying service is enabled in your configuration.
+  hardening.profiles = {
+    web-server.enable = true;    # nginx, apache, caddy, lighttpd, php-fpm
+    database.enable = true;        # postgresql, mysql, redis, mongodb, memcached
+    mail.enable = true;            # dovecot, postfix
+    messaging.enable = true;       # mosquitto, matrix-synapse
+    network.enable = true;         # ssh, dns, vpn, ntp, avahi, tor
+    storage.enable = true;         # samba, syncthing, nextcloud, minio
+    security.enable = true;        # fail2ban, vaultwarden, crowdsec
+    containers.enable = true;      # docker, containerd, podman
+    logging.enable = true;         # rsyslog
+    all.enable = true;             # shortcut: enable every profile above
+  };
 
   # Opt-in desktop app sandboxing (replaces apps with bwrap wrappers)
   hardening.desktopApps.enable = true;
@@ -230,14 +245,43 @@ Import only what you need:
 }
 ```
 
-### Per-Service Toggle
+### Profile-Based Enablement
 
-Each service module has its own enable switch:
+Instead of toggling each service individually, enable a **profile**. Every service
+in that profile is hardened automatically when it is enabled in your NixOS
+configuration:
 
 ```nix
 {
-  hardening.services.nginx.enable = true;   # default: true when imported
-  hardening.services.mysql.enable = false;  # skip MySQL hardening
+  hardening.profiles.web-server.enable = true;
+  # Now nginx, apache, caddy, lighttpd, and php-fpm are hardened
+  # automatically as soon as services.nginx.enable = true, etc.
+}
+```
+
+Profiles available:
+
+| Profile | Services Covered |
+|---------|-----------------|
+| `profiles.web-server` | nginx, apache, caddy, lighttpd, php-fpm |
+| `profiles.database` | postgresql, mysql, redis, mongodb, memcached |
+| `profiles.mail` | dovecot, postfix |
+| `profiles.messaging` | mosquitto, matrix-synapse |
+| `profiles.network` | ssh, dnsmasq, unbound, bind, avahi, ntpd, chrony, tor, wireguard, openvpn |
+| `profiles.storage` | samba, syncthing, nextcloud, minio |
+| `profiles.security` | fail2ban, vaultwarden, crowdsec |
+| `profiles.containers` | docker, containerd, podman |
+| `profiles.logging` | rsyslog |
+| `profiles.all` | every profile above at once |
+
+### Granular Per-Service Toggle
+
+If you need finer control, override individual services after enabling a profile:
+
+```nix
+{
+  hardening.profiles.web-server.enable = true;
+  hardening.services.apache.enable = false;   # skip apache hardening
 }
 ```
 
@@ -294,7 +338,7 @@ let
 in
 {
   options.hardening.services.myservice = {
-    enable = mkEnableOption "my service hardening" // { default = true; };
+    enable = mkEnableOption "my service hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.myservice.enable) {

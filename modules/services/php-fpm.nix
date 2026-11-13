@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.phpFpm = {
-    enable = mkEnableOption "PHP-FPM hardening" // { default = true; };
+    enable = mkEnableOption "PHP-FPM hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.phpfpm.pools != {}) {

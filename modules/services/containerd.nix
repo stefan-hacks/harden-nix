@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.containerd = {
-    enable = mkEnableOption "containerd hardening" // { default = true; };
+    enable = mkEnableOption "containerd hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.virtualisation.containerd.enable) {

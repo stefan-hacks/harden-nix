@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.ssh = {
-    enable = mkEnableOption "SSH daemon hardening" // { default = true; };
+    enable = mkEnableOption "SSH daemon hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.openssh.enable) {

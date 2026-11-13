@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.minio = {
-    enable = mkEnableOption "MinIO hardening" // { default = true; };
+    enable = mkEnableOption "MinIO hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.minio.enable) {

@@ -4,6 +4,13 @@ with lib;
 
 let
   cfg = config.hardening;
+  profiles = config.hardening.profiles;
+
+  # Helper: enable all hardening options for a list of service names
+  enableServices = names: listToAttrs (map (name: {
+    name = "hardening.services.${name}.enable";
+    value = mkDefault true;
+  }) names);
 in
 {
   imports = [
@@ -80,13 +87,119 @@ in
 
   options.hardening = {
     enable = mkEnableOption "all hardening modules (baseline preset)";
+
+    profiles = {
+      web-server = {
+        enable = mkEnableOption "web server hardening profile (nginx, apache, caddy, lighttpd, php-fpm)";
+      };
+      database = {
+        enable = mkEnableOption "database hardening profile (postgresql, mysql, redis, mongodb, memcached)";
+      };
+      mail = {
+        enable = mkEnableOption "mail hardening profile (dovecot, postfix)";
+      };
+      messaging = {
+        enable = mkEnableOption "messaging hardening profile (mosquitto, matrix-synapse)";
+      };
+      network = {
+        enable = mkEnableOption "network hardening profile (ssh, dns, vpn, ntp, avahi, tor)";
+      };
+      storage = {
+        enable = mkEnableOption "storage / file sharing hardening profile (samba, syncthing, nextcloud, minio)";
+      };
+      security = {
+        enable = mkEnableOption "security tools hardening profile (fail2ban, vaultwarden, crowdsec)";
+      };
+      containers = {
+        enable = mkEnableOption "container runtime hardening profile (docker, containerd, podman)";
+      };
+      logging = {
+        enable = mkEnableOption "logging hardening profile (rsyslog)";
+      };
+      all = {
+        enable = mkEnableOption "all service hardening profiles at once";
+      };
+    };
   };
 
-  # When the baseline preset is enabled, flip on every submodule.
-  config = mkIf cfg.enable {
-    hardening.kernel.enable = mkDefault true;
-    hardening.network.enable = mkDefault true;
-    hardening.systemd.enable = mkDefault true;
-    hardening.desktopApps.enable = mkDefault false; # opt-in: changes visible desktop apps
-  };
+  config = mkMerge [
+    # Baseline system hardening (always on when hardening.enable = true)
+    (mkIf cfg.enable {
+      hardening.kernel.enable = mkDefault true;
+      hardening.network.enable = mkDefault true;
+      hardening.systemd.enable = mkDefault true;
+      hardening.desktopApps.enable = mkDefault false;
+    })
+
+    # ─── Profile: Web Servers ───
+    (mkIf (profiles.web-server.enable || profiles.all.enable) {
+      hardening.services.nginx.enable = mkDefault true;
+      hardening.services.apache.enable = mkDefault true;
+      hardening.services.caddy.enable = mkDefault true;
+      hardening.services.lighttpd.enable = mkDefault true;
+      hardening.services.phpFpm.enable = mkDefault true;
+    })
+
+    # ─── Profile: Databases ───
+    (mkIf (profiles.database.enable || profiles.all.enable) {
+      hardening.services.postgresql.enable = mkDefault true;
+      hardening.services.mysql.enable = mkDefault true;
+      hardening.services.redis.enable = mkDefault true;
+      hardening.services.mongodb.enable = mkDefault true;
+      hardening.services.memcached.enable = mkDefault true;
+    })
+
+    # ─── Profile: Mail ───
+    (mkIf (profiles.mail.enable || profiles.all.enable) {
+      hardening.services.dovecot.enable = mkDefault true;
+      hardening.services.postfix.enable = mkDefault true;
+    })
+
+    # ─── Profile: Messaging ───
+    (mkIf (profiles.messaging.enable || profiles.all.enable) {
+      hardening.services.mosquitto.enable = mkDefault true;
+      hardening.services.matrix-synapse.enable = mkDefault true;
+    })
+
+    # ─── Profile: Network / DNS / VPN ───
+    (mkIf (profiles.network.enable || profiles.all.enable) {
+      hardening.services.ssh.enable = mkDefault true;
+      hardening.services.dnsmasq.enable = mkDefault true;
+      hardening.services.unbound.enable = mkDefault true;
+      hardening.services.bind.enable = mkDefault true;
+      hardening.services.avahi.enable = mkDefault true;
+      hardening.services.ntpd.enable = mkDefault true;
+      hardening.services.chrony.enable = mkDefault true;
+      hardening.services.tor.enable = mkDefault true;
+      hardening.services.wireguard.enable = mkDefault true;
+      hardening.services.openvpn.enable = mkDefault true;
+    })
+
+    # ─── Profile: Storage ───
+    (mkIf (profiles.storage.enable || profiles.all.enable) {
+      hardening.services.samba.enable = mkDefault true;
+      hardening.services.syncthing.enable = mkDefault true;
+      hardening.services.nextcloud.enable = mkDefault true;
+      hardening.services.minio.enable = mkDefault true;
+    })
+
+    # ─── Profile: Security Tools ───
+    (mkIf (profiles.security.enable || profiles.all.enable) {
+      hardening.services.fail2ban.enable = mkDefault true;
+      hardening.services.vaultwarden.enable = mkDefault true;
+      hardening.services.crowdsec.enable = mkDefault true;
+    })
+
+    # ─── Profile: Containers ───
+    (mkIf (profiles.containers.enable || profiles.all.enable) {
+      hardening.services.docker.enable = mkDefault true;
+      hardening.services.containerd.enable = mkDefault true;
+      hardening.services.podman.enable = mkDefault true;
+    })
+
+    # ─── Profile: Logging ───
+    (mkIf (profiles.logging.enable || profiles.all.enable) {
+      hardening.services.rsyslog.enable = mkDefault true;
+    })
+  ];
 }

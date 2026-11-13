@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.nextcloud = {
-    enable = mkEnableOption "Nextcloud hardening" // { default = true; };
+    enable = mkEnableOption "Nextcloud hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.nextcloud.enable) {

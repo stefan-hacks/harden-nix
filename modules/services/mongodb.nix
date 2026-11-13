@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.mongodb = {
-    enable = mkEnableOption "MongoDB hardening" // { default = true; };
+    enable = mkEnableOption "MongoDB hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.mongodb.enable) {

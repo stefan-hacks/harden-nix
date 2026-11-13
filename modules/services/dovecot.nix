@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.dovecot = {
-    enable = mkEnableOption "Dovecot hardening" // { default = true; };
+    enable = mkEnableOption "Dovecot hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.dovecot2.enable) {

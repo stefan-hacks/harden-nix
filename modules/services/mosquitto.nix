@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.mosquitto = {
-    enable = mkEnableOption "Mosquitto hardening" // { default = true; };
+    enable = mkEnableOption "Mosquitto hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.mosquitto.enable) {

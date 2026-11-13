@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.vaultwarden = {
-    enable = mkEnableOption "Vaultwarden hardening" // { default = true; };
+    enable = mkEnableOption "Vaultwarden hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.vaultwarden.enable) {

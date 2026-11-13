@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.tor = {
-    enable = mkEnableOption "Tor daemon hardening" // { default = true; };
+    enable = mkEnableOption "Tor daemon hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.tor.enable) {

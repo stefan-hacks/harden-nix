@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.crowdsec = {
-    enable = mkEnableOption "CrowdSec hardening" // { default = true; };
+    enable = mkEnableOption "CrowdSec hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.crowdsec.enable) {

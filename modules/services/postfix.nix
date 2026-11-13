@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.postfix = {
-    enable = mkEnableOption "Postfix hardening" // { default = true; };
+    enable = mkEnableOption "Postfix hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.postfix.enable) {

@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.rsyslog = {
-    enable = mkEnableOption "Rsyslog hardening" // { default = true; };
+    enable = mkEnableOption "Rsyslog hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.rsyslogd.enable) {

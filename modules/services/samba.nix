@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.samba = {
-    enable = mkEnableOption "Samba (smbd/nmbd) hardening" // { default = true; };
+    enable = mkEnableOption "Samba (smbd/nmbd) hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.samba.enable) {

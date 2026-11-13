@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.nginx = {
-    enable = mkEnableOption "nginx hardening" // { default = true; };
+    enable = mkEnableOption "nginx hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.nginx.enable) {

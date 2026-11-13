@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.apache = {
-    enable = mkEnableOption "Apache httpd hardening" // { default = true; };
+    enable = mkEnableOption "Apache httpd hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.httpd.enable) {

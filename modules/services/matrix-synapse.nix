@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.matrix-synapse = {
-    enable = mkEnableOption "Matrix Synapse hardening" // { default = true; };
+    enable = mkEnableOption "Matrix Synapse hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.matrix-synapse.enable) {

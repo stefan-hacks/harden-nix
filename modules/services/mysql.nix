@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.mysql = {
-    enable = mkEnableOption "MySQL/MariaDB hardening" // { default = true; };
+    enable = mkEnableOption "MySQL/MariaDB hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.mysql.enable) {

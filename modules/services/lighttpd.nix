@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.lighttpd = {
-    enable = mkEnableOption "lighttpd hardening" // { default = true; };
+    enable = mkEnableOption "lighttpd hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.lighttpd.enable) {

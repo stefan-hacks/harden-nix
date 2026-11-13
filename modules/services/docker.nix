@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.docker = {
-    enable = mkEnableOption "Docker daemon hardening" // { default = true; };
+    enable = mkEnableOption "Docker daemon hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.virtualisation.docker.enable) {

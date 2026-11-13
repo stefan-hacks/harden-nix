@@ -8,7 +8,7 @@ let
 in
 {
   options.hardening.services.unbound = {
-    enable = mkEnableOption "unbound hardening" // { default = true; };
+    enable = mkEnableOption "unbound hardening" // { default = false; };
   };
 
   config = mkIf (cfg.enable && config.services.unbound.enable) {
