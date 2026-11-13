@@ -214,6 +214,22 @@ Use Flatpak for desktop apps — they are already sandboxed by Flatpak itself, s
 
 **How it works:** `hardening.flatpak.enable = true` sets secure defaults (filesystem restricted to `~/Downloads`, auto-updates weekly). You manage the app list directly via nix-flatpak's standard interface.
 
+**Migration tool:** `nix-to-flatpak` scans your installed Nix packages and finds Flatpak equivalents:
+
+```bash
+# Run from the flake
+nix run github:stefan-hacks/harden-nix#nix-to-flatpak
+
+# Or after adding the flake input
+nix run .#nix-to-flatpak
+
+# Scan specific packages
+nix run .#nix-to-flatpak firefox thunderbird vlc
+
+# JSON output for automation
+nix run .#nix-to-flatpak -- --json
+```
+
 ### 🔐 Security Helpers
 
 | Module | Path | Description |

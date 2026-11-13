@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""
+nix-to-flatpak — Scan installed Nix packages and find Flatpak equivalents.
+
+Usage:
+    nix-to-flatpak                    # scan all installed packages
+    nix-to-flatpak firefox chromium   # scan specific packages
+    nix-to-flatpak --json             # output JSON for automation
+
+Searches Flathub case-insensitively and returns only packages that have
+a matching Flatpak app ID. Results are printed as ready-to-paste Nix list
+entries.
+"""
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+
+def get_installed_nix_packages():
+    """Return a set of installed package names from the current NixOS system."""
+    try:
+        result = subprocess.run(
+            ["nix", "run", "nixpkgs#nix-index", "--", "nix-locate", "--top-level", "/bin/"],
+            capture_output=True, text=True, timeout=120
+        )
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        # Fallback: query nix store directly
+        result = subprocess.run(
+            ["nix-env", "-q", "--out-path"],
+            capture_output=True, text=True, timeout=60
+        )
+        if result.returncode != 0:
+            return set()
+        packages = set()
+        for line in result.stdout.strip().split("\n"):
+            if line.strip():
+                # Format: name-version  /nix/store/...
+                name = line.split()[0].rsplit("-", 1)[0]
+                packages.add(name)
+        return packages
+
+    if result.returncode != 0:
+        return set()
+
+    packages = set()
+    for line in result.stdout.strip().split("\n"):
+        # nix-locate output: package-name (out) /nix/store/.../bin/name
+        match = re.match(r'^([^\s]+)', line)
+        if match:
+            name = match.group(1).rsplit("-", 1)[0]
+            packages.add(name)
+    return packages
+
+def get_installed_home_manager_packages():
+    """Try to get packages from home-manager as well."""
+    try:
+        result = subprocess.run(
+            ["home-manager", "packages"],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            return {line.strip().rsplit("-", 1)[0] for line in result.stdout.split("\n") if line.strip()}
+    except FileNotFoundError:
+        pass
+    return set()
+
+def flatpak_search(name):
+    """Search flatpak for a given name, return list of (app_id, name) tuples."""
+    try:
+        result = subprocess.run(
+            ["flatpak", "search", "--columns=application:name", name],
+            capture_output=True, text=True, timeout=30
+        )
+    except FileNotFoundError:
+        print("ERROR: flatpak command not found. Install flatpak first.", file=sys.stderr)
+        sys.exit(1)
+
+    if result.returncode != 0 or not result.stdout.strip():
+        return []
+
+    matches = []
+    for line in result.stdout.strip().split("\n"):
+        parts = line.split("\t", 1)
+        if len(parts) == 2:
+            app_id, display_name = parts
+            matches.append((app_id.strip(), display_name.strip()))
+    return matches
+
+def is_desktop_package(name):
+    """Heuristic: is this likely a desktop/GUI application?"""
+    desktop_keywords = [
+        "browser", "firefox", "chromium", "chrome", "brave", "opera", "vivaldi",
+        "telegram", "discord", "signal", "element", "riot", "whatsapp",
+        "thunderbird", "geary", "evolution", "mail", "email",
+        "vlc", "mpv", "obs", "studio", "spotify", "rhythmbox",
+        "gimp", "inkscape", "blender", "krita",
+        "vscode", "code", "idea", "sublime", "vim", "emacs", "neovim",
+        "libreoffice", "onlyoffice", "obsidian", "notion",
+        "steam", "lutris", "wine",
+        "qbittorrent", "transmission",
+        "nautilus", "dolphin", "pcmanfm",
+        "gnome", "kde", "xfce", "pantheon",
+        "gtk", "qt", "gui", "desktop", "app", "client",
+        "viewer", "editor", "player", "reader", "manager",
+    ]
+    name_lower = name.lower()
+    return any(kw in name_lower for kw in desktop_keywords)
+
+def find_flatpak_matches(package_names):
+    """For each package name, search flatpak and find case-insensitive matches."""
+    results = []
+    checked = set()
+
+    for pkg in sorted(package_names):
+        if not is_desktop_package(pkg):
+            continue
+
+        # Search with original and common variants
+        searches = {pkg.lower(), pkg.replace("-", "").lower(), pkg.replace("-", " ").lower()}
+        found = []
+
+        for term in searches:
+            if term in checked:
+                continue
+            checked.add(term)
+            for app_id, display_name in flatpak_search(term):
+                # Case-insensitive matching
+                pkg_normalized = re.sub(r'[^a-z0-9]', '', pkg.lower())
+                app_normalized = re.sub(r'[^a-z0-9]', '', app_id.lower().split(".")[-1])
+                name_normalized = re.sub(r'[^a-z0-9]', '', display_name.lower())
+
+                if pkg_normalized in app_normalized or pkg_normalized in name_normalized:
+                    found.append({
+                        "nix_package": pkg,
+                        "flatpak_id": app_id,
+                        "flatpak_name": display_name,
+                    })
+
+        # Deduplicate by flatpak ID
+        seen = set()
+        for match in found:
+            if match["flatpak_id"] not in seen:
+                seen.add(match["flatpak_id"])
+                results.append(match)
+
+    return results
+
+def print_results(results, json_mode=False):
+    if json_mode:
+        print(json.dumps(results, indent=2))
+        return
+
+    if not results:
+        print("No Flatpak matches found for installed desktop packages.")
+        return
+
+    print(f"Found {len(results)} potential Flatpak replacement(s):\n")
+    print("    # ── Add these to your configuration ──")
+    print("    services.flatpak.packages = [")
+    for r in results:
+        print(f'      "{r["flatpak_id"]}"  # replaces nixpkgs:{r["nix_package"]}')
+    print("    ];")
+    print()
+    print("Copy the above into your NixOS configuration under hardening.flatpak.enable.")
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Scan installed Nix packages and find Flatpak equivalents."
+    )
+    parser.add_argument(
+        "packages", nargs="*",
+        help="Specific package names to check (default: scan all installed)"
+    )
+    parser.add_argument(
+        "--json", action="store_true",
+        help="Output machine-readable JSON instead of Nix syntax"
+    )
+    parser.add_argument(
+        "--all", action="store_true",
+        help="Include non-desktop packages too"
+    )
+    args = parser.parse_args()
+
+    if args.packages:
+        packages = set(args.packages)
+    else:
+        packages = get_installed_nix_packages()
+        packages |= get_installed_home_manager_packages()
+
+    if not packages:
+        print("ERROR: Could not determine installed packages.", file=sys.stderr)
+        print("Run with explicit names: nix-to-flatpak firefox thunderbird", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.all:
+        packages = {p for p in packages if is_desktop_package(p)}
+
+    print(f"Scanning {len(packages)} desktop package(s) against Flathub...\n", file=sys.stderr)
+    results = find_flatpak_matches(packages)
+    print_results(results, json_mode=args.json)
+
+if __name__ == "__main__":
+    main()

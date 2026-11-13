@@ -33,6 +33,12 @@
         };
       };
 
+      packages = forAllSystems (system: rec {
+        nix-to-flatpak = nixpkgs.legacyPackages.${system}.writeScriptBin "nix-to-flatpak"
+          (builtins.readFile ./tools/flatpak-migrate/nix-to-flatpak);
+        default = nix-to-flatpak;
+      });
+
       checks = forAllSystems (system:
         import ./checks {
           pkgs = nixpkgs.legacyPackages.${system};
