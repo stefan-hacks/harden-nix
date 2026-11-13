@@ -15,6 +15,16 @@ in
     ./services/postgresql.nix
     ./services/ssh.nix
     ./services/fail2ban.nix
+    ./services/dovecot.nix
+    ./services/dnsmasq.nix
+    ./services/mosquitto.nix
+    ./services/php-fpm.nix
+    ./services/avahi.nix
+    ./services/ntpd.nix
+    ./services/samba.nix
+    ./services/redis.nix
+    ./services/mysql.nix
+    ./services/apache.nix
   ];
 
   options.hardening = {

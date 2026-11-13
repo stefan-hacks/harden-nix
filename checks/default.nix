@@ -59,4 +59,38 @@ in
       machine.succeed("systemctl show nginx.service --property NoNewPrivileges | grep yes")
     '';
   };
+
+  # VM test: verify mosquitto hardening does not break MQTT
+  mosquittoHardening = pkgs.testers.nixosTest {
+    name = "mosquitto-hardening";
+
+    nodes.machine = { config, pkgs, ... }: {
+      imports = [ testModule ];
+      services.mosquitto = {
+        enable = true;
+        listeners = [{
+          port = 1883;
+          omitPasswordAuth = true;
+          settings.allow_anonymous = true;
+        }];
+      };
+      networking.firewall.allowedTCPPorts = [ 1883 ];
+      boot.loader.grub.device = "/dev/vda";
+      fileSystems."/" = {
+        device = "/dev/vda1";
+        fsType = "ext4";
+      };
+    };
+
+    testScript = ''
+      machine.start()
+      machine.wait_for_unit("mosquitto.service")
+      # Verify hardening options are present in the unit
+      machine.succeed("systemctl show mosquitto.service --property ProtectSystem | grep strict")
+      machine.succeed("systemctl show mosquitto.service --property NoNewPrivileges | grep yes")
+      machine.succeed("systemctl show mosquitto.service --property PrivateDevices | grep yes")
+      # Verify the broker port is listening
+      machine.succeed("ss -tlnp | grep ':1883'")
+    '';
+  };
 }
