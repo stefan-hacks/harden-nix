@@ -14,6 +14,7 @@ in
   config = mkIf (cfg.enable && config.services.openssh.enable) {
     # sshd needs read access to user home dirs for authorized_keys.
     systemd.services.sshd.serviceConfig = {
+      ProtectSystem = "strict";
       ProtectHome = "read-only";
       PrivateTmp = true;
       NoNewPrivileges = true;
@@ -25,6 +26,8 @@ in
       LockPersonality = true;
       # sshd needs unix sockets for agent forwarding
       RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
+      SystemCallFilter = [ "@system-service" "~@debug" "~@mount" ];
+      CapabilityBoundingSet = [ "CAP_NET_BIND_SERVICE" "CAP_SYS_PTRACE" ];
      } // extraHardening;
   };
 }

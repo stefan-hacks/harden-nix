@@ -13,7 +13,7 @@ in
   # When enabled, harden-nix sets secure defaults for the nix-flatpak module.
   # Users add/remove apps directly via `services.flatpak.packages` —
   # just run `flatpak search <name>`, copy the app ID, and drop it in the list.
-  config = mkIf cfg.enable (optionalAttrs (options ? services && options.services ? flatpak) {
+  config = mkIf cfg.enable {
     assertions = [{
       assertion = config.services.flatpak.enable or false;
       message = ''
@@ -22,7 +22,7 @@ in
       '';
     }];
 
-    services.flatpak = {
+    services.flatpak = optionalAttrs (options ? services && options.services ? flatpak) {
       # Enable the flatpak subsystem (idempotent if already enabled)
       enable = true;
 
@@ -42,5 +42,5 @@ in
       # Also update on first activation after nixos-rebuild switch
       update.onActivation = true;
     };
-  });
+  };
 }

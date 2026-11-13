@@ -13,13 +13,18 @@ in
 
   config = mkIf (cfg.enable && config.services.fail2ban.enable) {
     systemd.services.fail2ban.serviceConfig = {
+      ProtectSystem = "strict";
       ProtectHome = true;
+      PrivateTmp = true;
       ProtectKernelModules = true;
       ProtectKernelTunables = true;
       ProtectControlGroups = true;
       RestrictRealtime = true;
+      RestrictSUIDSGID = true;
       LockPersonality = true;
       NoNewPrivileges = true;
+      SystemCallFilter = [ "@system-service" "~@debug" "~@mount" ];
+      CapabilityBoundingSet = [ "CAP_NET_ADMIN" "CAP_NET_RAW" ];
      } // extraHardening;
   };
 }
