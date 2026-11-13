@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.redis;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.redis = {
@@ -41,7 +42,7 @@ in
             "CAP_SETGID"
             "CAP_SETUID"
           ];
-        };
+         } // extraHardening;
       }
     ) config.services.redis.servers;
   };

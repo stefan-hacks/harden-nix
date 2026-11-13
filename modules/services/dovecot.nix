@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.dovecot;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.dovecot = {
@@ -44,6 +45,6 @@ in
         "CAP_SETGID"
         "CAP_SETUID"
       ];
-    };
+     } // extraHardening;
   };
 }

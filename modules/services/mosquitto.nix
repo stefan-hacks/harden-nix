@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.mosquitto;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.mosquitto = {
@@ -41,6 +42,6 @@ in
         "CAP_SETGID"
         "CAP_SETUID"
       ];
-    };
+     } // extraHardening;
   };
 }

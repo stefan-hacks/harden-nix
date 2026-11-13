@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.nginx;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.nginx = {
@@ -29,6 +30,6 @@ in
         "/var/log/nginx"
         "/var/cache/nginx"
       ];
-    };
+     } // extraHardening;
   };
 }

@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.ssh;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.ssh = {
@@ -24,6 +25,6 @@ in
       LockPersonality = true;
       # sshd needs unix sockets for agent forwarding
       RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
-    };
+     } // extraHardening;
   };
 }

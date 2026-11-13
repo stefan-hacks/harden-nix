@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.apache;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.apache = {
@@ -51,6 +52,6 @@ in
         "CAP_SETUID"
         "CAP_SYS_TTY_CONFIG"
       ];
-    };
+     } // extraHardening;
   };
 }

@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.avahi;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.avahi = {
@@ -42,6 +43,6 @@ in
         "CAP_SETUID"
         "CAP_SYS_CHROOT"
       ];
-    };
+     } // extraHardening;
   };
 }

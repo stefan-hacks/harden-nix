@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.samba;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.samba = {
@@ -52,7 +53,7 @@ in
         "CAP_SYS_RESOURCE"
         "CAP_SYS_TTY_CONFIG"
       ];
-    };
+     } // extraHardening;
 
     systemd.services.nmbd.serviceConfig = {
       ProtectSystem = "strict";
@@ -79,6 +80,6 @@ in
       CapabilityBoundingSet = [
         "CAP_NET_BIND_SERVICE"
       ];
-    };
+    } // extraHardening;
   };
 }

@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.fail2ban;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.fail2ban = {
@@ -19,6 +20,6 @@ in
       RestrictRealtime = true;
       LockPersonality = true;
       NoNewPrivileges = true;
-    };
+     } // extraHardening;
   };
 }

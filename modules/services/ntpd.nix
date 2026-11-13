@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.ntpd;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.ntpd = {
@@ -51,6 +52,6 @@ in
         "CAP_SYS_RESOURCE"
         "CAP_SYS_TIME"
       ];
-    };
+     } // extraHardening;
   };
 }

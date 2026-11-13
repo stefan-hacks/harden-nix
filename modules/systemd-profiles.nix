@@ -39,6 +39,7 @@ let
       ProtectKernelLogs = true;
       ProtectClock = true;
       ProtectHostname = true;
+      IPAddressDeny = "any";
       SystemCallFilter = "@system-service";
       ProtectKernelTunables = true;
       ProtectKernelModules = true;
@@ -114,6 +115,17 @@ in
             default = {};
             description = "Extra serviceConfig merged after the archetype.";
           };
+
+          allowIPAddresses = mkOption {
+            type = types.enum [ "none" "local" "any" ];
+            default = "none";
+            description = ''
+              IP address allowance for this service:
+              - none: no IPAddressDeny/IPAddressAllow added (profile default)
+              - local: allow 127.0.0.1/32, ::1/128, 169.254.0.0/16
+              - any: allow all addresses (IPAddressAllow = any)
+            '';
+          };
         };
       });
       default = {};
@@ -132,10 +144,22 @@ in
         base = if serviceCfg.profile != null
           then profiles.${serviceCfg.profile}
           else {};
+
+        ipAllow = {
+          local = {
+            IPAddressDeny = "any";
+            IPAddressAllow = [ "127.0.0.1/32" "::1/128" "169.254.0.0/16" ];
+          };
+          any = {
+            IPAddressAllow = "any";
+          };
+          none = {};
+        }.${serviceCfg.allowIPAddresses};
       in
       {
         serviceConfig = mkMerge [
           base
+          ipAllow
           serviceCfg.extraServiceConfig
         ];
       }

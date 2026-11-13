@@ -11,6 +11,9 @@ in
     ./network.nix
     ./systemd-profiles.nix
     ./desktop-apps.nix
+    ./extra-hardening.nix
+    ./dbus-hide-processes.nix
+    ./operator.nix
     ./services/nginx.nix
     ./services/postgresql.nix
     ./services/ssh.nix

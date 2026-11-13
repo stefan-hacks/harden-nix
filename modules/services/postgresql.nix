@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardening.services.postgresql;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false) config.hardening._extraServiceConfig;
 in
 {
   options.hardening.services.postgresql = {
@@ -29,6 +30,6 @@ in
         "/var/lib/postgresql"
         "/var/log/postgresql"
       ];
-    };
+     } // extraHardening;
   };
 }
