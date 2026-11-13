@@ -39,6 +39,9 @@ Then enable the baseline in your `configuration.nix`:
 | `network` | `nixosModules.network` | Firewall defaults and network sysctl |
 | `systemd-profiles` | `nixosModules.systemd-profiles` | Reusable archetypes for your own services |
 | `desktop-apps` | `nixosModules.desktop-apps` | Bubblewrap sandbox wrappers (opt-in) |
+| `extra-hardening` | `nixosModules.extra-hardening` | Strict preset: `ProtectProc`, `RestrictNamespaces`, etc. |
+| `dbus-hide-processes` | `nixosModules.dbus-hide-processes` | D-Bus `GetUnitProcesses` restriction |
+| `operator` | `nixosModules.operator` | Non-root operator user for service CLI access |
 
 ### Per-Service Auto-Hardening
 
@@ -77,9 +80,68 @@ Use `hardening.systemd.services.<name>` to apply a profile to any systemd unit:
 
 Available profiles:
 - `network-daemon` — internet-facing daemon
-- `local-worker` — background worker, no network
+- `local-worker` — background worker, no network (also sets `IPAddressDeny = "any"`)
 - `web-server` — HTTP service (allows `AF_UNIX`)
 - `database` — database service (allows `AF_UNIX`)
+
+Per-service network firewalling (via systemd `IPAddressDeny`/`IPAddressAllow`):
+
+```nix
+{
+  hardening.systemd.services = {
+    my-api.profile = "network-daemon";
+    my-api.allowIPAddresses = "any";      # allow all (default for non-local profiles)
+    my-worker.profile = "local-worker";
+    my-worker.allowIPAddresses = "local";   # allow localhost + link-local only
+  };
+}
+```
+
+### Extra Hardening (Opt-in)
+
+Enable the strict preset for additional restrictions on **all** hardened services:
+
+```nix
+{
+  hardening.extra.enable = true;
+}
+```
+
+This adds (to every service module):
+- `ProtectProc = "invisible"` — hide other processes
+- `ProcSubset = "pid"` — only see PID directories
+- `RestrictNamespaces = true` — cannot create new namespaces
+- `RemoveIPC = true` — clean up IPC on exit
+- `SystemCallArchitectures = "native"` — only native-arch syscalls
+
+**Warning:** These options are more restrictive than the baseline and may break services
+that legitimately need namespaces or non-native syscalls. Test each service after enabling.
+
+### D-Bus Process Hiding
+
+Mitigate a systemd issue where `ProtectProc` does not block process info leaks via D-Bus:
+
+```nix
+{
+  hardening.security.dbusHideProcessInformation = true;
+}
+```
+
+This restricts `GetUnitProcesses` to members of the `proc` group.
+
+### Operator User
+
+Create a non-root user with access to service client tools and journals:
+
+```nix
+{
+  hardening.operator = {
+    enable = true;
+    name = "ops";
+    allowRunAsUsers = [ "root" "postgres" ];
+  };
+}
+```
 
 ## Desktop Sandboxing (Experimental)
 
@@ -141,6 +203,11 @@ observe it at runtime.
 - **shh** (`github.com/desbma/shh`) — strace-based profiling patterns that inspired
   our understanding of what to harden, and why declarative archetypes are more
   maintainable than generated per-system profiles.
+- **nix-bitcoin** (`github.com/fort-nix/nix-bitcoin`) — Bitcoin node hardening
+  project that demonstrated production-grade patterns: comprehensive `defaultHardening`
+  attrset (`ProtectProc`, `ProcSubset`, `RestrictNamespaces`, `RemoveIPC`,
+  `SystemCallArchitectures`, `IPAddressDeny`), D-Bus process hiding, operator user
+  pattern, and per-service dedicated users with group-based access control.
 
 ## Testing
 
