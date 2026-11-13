@@ -7,27 +7,75 @@ let
 in
 {
   imports = [
-    ./kernel.nix
-    ./network.nix
-    ./systemd-profiles.nix
-    ./desktop-apps.nix
-    ./extra-hardening.nix
-    ./dbus-hide-processes.nix
-    ./operator.nix
+    # System-level modules
+    ./system/kernel.nix
+    ./system/network.nix
+    ./system/extra-hardening.nix
+
+    # Reusable systemd archetypes
+    ./profiles/systemd-profiles.nix
+
+    # Desktop application sandboxing
+    ./desktop/default.nix
+
+    # Security helpers
+    ./security/dbus-hide-processes.nix
+    ./security/operator.nix
+
+    # ─── Web Servers ───
     ./services/nginx.nix
+    ./services/apache.nix
+    ./services/caddy.nix
+    ./services/lighttpd.nix
+
+    # ─── Databases ───
     ./services/postgresql.nix
-    ./services/ssh.nix
-    ./services/fail2ban.nix
+    ./services/mysql.nix
+    ./services/redis.nix
+    ./services/mongodb.nix
+    ./services/memcached.nix
+
+    # ─── Mail ───
     ./services/dovecot.nix
-    ./services/dnsmasq.nix
+    ./services/postfix.nix
+
+    # ─── Messaging ───
     ./services/mosquitto.nix
-    ./services/php-fpm.nix
+    ./services/matrix-synapse.nix
+
+    # ─── Networking / DNS / VPN ───
+    ./services/ssh.nix
+    ./services/dnsmasq.nix
+    ./services/unbound.nix
+    ./services/bind.nix
     ./services/avahi.nix
     ./services/ntpd.nix
+    ./services/chrony.nix
+    ./services/tor.nix
+    ./services/wireguard.nix
+    ./services/openvpn.nix
+
+    # ─── Storage / File Sharing ───
     ./services/samba.nix
-    ./services/redis.nix
-    ./services/mysql.nix
-    ./services/apache.nix
+    ./services/syncthing.nix
+    ./services/nextcloud.nix
+    ./services/minio.nix
+
+    # ─── Languages / Runtimes ───
+    ./services/php-fpm.nix
+
+    # ─── Security ───
+    ./services/fail2ban.nix
+    ./services/vaultwarden.nix
+    ./services/crowdsec.nix
+
+    # ─── Containers ───
+    ./services/docker.nix
+    ./services/containerd.nix
+    ./services/podman.nix
+
+    # ─── Logging ───
+    ./services/rsyslog.nix
   ];
 
   options.hardening = {

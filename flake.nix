@@ -14,10 +14,10 @@
       nixosModules = {
         default = self.nixosModules.hardened-baseline;
         hardened-baseline = ./modules/default.nix;
-        kernel = ./modules/kernel.nix;
-        network = ./modules/network.nix;
-        systemd-profiles = ./modules/systemd-profiles.nix;
-        desktop-apps = ./modules/desktop-apps.nix;
+        kernel = ./modules/system/kernel.nix;
+        network = ./modules/system/network.nix;
+        systemd-profiles = ./modules/profiles/systemd-profiles.nix;
+        desktop-apps = ./modules/desktop/default.nix;
       };
 
       checks = forAllSystems (system:

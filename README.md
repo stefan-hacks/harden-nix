@@ -1,11 +1,29 @@
-# harden-nix
+# ❄️ harden-nix
 
-Pure-Nix security hardening modules for NixOS. Import this flake as a library and
-enable the pieces you need.
+> **Declarative, composable security hardening for NixOS — no AppArmor required.**
 
-## Quick Start
+[![NixOS](https://img.shields.io/badge/NixOS-26.05-blue?logo=nixos&logoColor=white)](https://nixos.org)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Flakes](https://img.shields.io/badge/Nix-Flake-purple?logo=nixos)](https://nixos.wiki/wiki/Flakes)
 
-Add `harden-nix` as a flake input:
+A pure-Nix flake providing **drop-in hardening modules** for NixOS services, daemons, and desktop applications. Inspired by upstream AppArmor profiles, `nixos-harden-systemd`, and `nix-bitcoin` — implemented entirely in declarative NixOS modules with **zero runtime profiling**.
+
+---
+
+## ✨ Why harden-nix?
+
+| AppArmor | harden-nix |
+|---|---|
+| Maintains per-binary profiles with `/nix/store` hash wildcards | Modules attach directly to `systemd.services.<name>` — no path maintenance |
+| Requires binary policy compilation on target | Pure Nix evaluation — zero target-side compilation |
+| Profiles can drift across releases | Tied to NixOS module system — versioned with your flake.lock |
+| Desktop apps need complex abstraction stacks | Single `makeBwrapWrapper` helper sandboxes any package |
+
+---
+
+## 🚀 Quick Start
+
+### Flake Input
 
 ```nix
 {
@@ -15,227 +33,343 @@ Add `harden-nix` as a flake input:
     nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
-        harden-nix.nixosModules.default   # or cherry-pick below
+        harden-nix.nixosModules.default
+        ./configuration.nix
       ];
     };
   };
 }
 ```
 
-Then enable the baseline in your `configuration.nix`:
+### Enable Baseline Hardening
 
 ```nix
-{
+{ config, pkgs, ... }: {
+  # Enable the full baseline (kernel + network + systemd profiles)
   hardening.enable = true;
+
+  # Opt-in desktop app sandboxing (replaces apps with bwrap wrappers)
+  hardening.desktopApps.enable = true;
+
+  # Opt-in strict extra hardening (may break some services — test first)
+  hardening.extra.enable = false;
 }
 ```
 
-## Module Reference
+---
 
-| Module | Path | What it does |
-|--------|------|--------------|
-| `hardened-baseline` | `nixosModules.default` | Enables `kernel` + `network` + `systemd-profiles` |
-| `kernel` | `nixosModules.kernel` | Boot params and sysctl hardening |
-| `network` | `nixosModules.network` | Firewall defaults and network sysctl |
-| `systemd-profiles` | `nixosModules.systemd-profiles` | Reusable archetypes for your own services |
-| `desktop-apps` | `nixosModules.desktop-apps` | Bubblewrap sandbox wrappers (opt-in) |
-| `extra-hardening` | `nixosModules.extra-hardening` | Strict preset: `ProtectProc`, `RestrictNamespaces`, etc. |
-| `dbus-hide-processes` | `nixosModules.dbus-hide-processes` | D-Bus `GetUnitProcesses` restriction |
-| `operator` | `nixosModules.operator` | Non-root operator user for service CLI access |
+## 📦 Module Catalog
 
-### Per-Service Auto-Hardening
+### 🔒 System Hardening
 
-If you import `default`, these services are automatically hardened when enabled:
+| Module | Path | Description |
+|--------|------|-------------|
+| **Kernel** | `modules/system/kernel.nix` | Hardened boot params + `sysctl` overrides (ptrace, ASLR, BPF, dmesg) |
+| **Network** | `modules/system/network.nix` | TCP syncookies, rp_filter, ICMP hardening, firewall defaults |
+| **Extra Hardening** | `modules/system/extra-hardening.nix` | Opt-in strict preset: `ProtectProc`, `RestrictNamespaces`, `RemoveIPC` |
 
-| Service | Option to disable |
-|---------|-------------------|
-| nginx | `hardening.services.nginx.enable = false` |
-| PostgreSQL | `hardening.services.postgresql.enable = false` |
-| OpenSSH | `hardening.services.ssh.enable = false` |
-| fail2ban | `hardening.services.fail2ban.enable = false` |
-| Apache | `hardening.services.apache.enable = false` |
-| Dovecot | `hardening.services.dovecot.enable = false` |
-| DNSMasq | `hardening.services.dnsmasq.enable = false` |
-| Mosquitto | `hardening.services.mosquitto.enable = false` |
-| PHP-FPM | `hardening.services.phpFpm.enable = false` |
-| Avahi | `hardening.services.avahi.enable = false` |
-| NTP | `hardening.services.ntpd.enable = false` |
-| Samba | `hardening.services.samba.enable = false` |
-| Redis | `hardening.services.redis.enable = false` |
-| MySQL/MariaDB | `hardening.services.mysql.enable = false` |
+### 🏛️ Reusable Systemd Archetypes
 
-### Systemd Archetypes
+| Module | Path | Description |
+|--------|------|-------------|
+| **Systemd Profiles** | `modules/profiles/systemd-profiles.nix` | Reusable security archetypes: `network-daemon`, `local-worker`, `web-server`, `database` |
 
-Use `hardening.systemd.services.<name>` to apply a profile to any systemd unit:
+### 🌐 Web Servers
+
+| Module | Service | Key Restrictions |
+|--------|---------|-----------------|
+| [nginx.nix](modules/services/nginx.nix) | `services.nginx` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `CAP_NET_BIND_SERVICE` |
+| [apache.nix](modules/services/apache.nix) | `services.httpd` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `CAP_NET_BIND_SERVICE` + `CAP_CHOWN` |
+| [caddy.nix](modules/services/caddy.nix) | `services.caddy` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `CAP_NET_BIND_SERVICE` |
+| [lighttpd.nix](modules/services/lighttpd.nix) | `services.lighttpd` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `CAP_NET_BIND_SERVICE` |
+| [php-fpm.nix](modules/services/php-fpm.nix) | `services.phpfpm` | `ProtectSystem=strict`, `AF_UNIX`, worker process isolation |
+
+### 🗄️ Databases
+
+| Module | Service | Key Restrictions |
+|--------|---------|-----------------|
+| [postgresql.nix](modules/services/postgresql.nix) | `services.postgresql` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `StateDirectory` |
+| [mysql.nix](modules/services/mysql.nix) | `services.mysql` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `CAP_IPC_LOCK` |
+| [redis.nix](modules/services/redis.nix) | `services.redis` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `StateDirectory` |
+| [mongodb.nix](modules/services/mongodb.nix) | `services.mongodb` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `StateDirectory` |
+| [memcached.nix](modules/services/memcached.nix) | `services.memcached` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `StateDirectory` |
+
+### 📧 Mail
+
+| Module | Service | Key Restrictions |
+|--------|---------|-----------------|
+| [dovecot.nix](modules/services/dovecot.nix) | `services.dovecot2` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `CapabilityBoundingSet` with `CAP_CHOWN` |
+| [postfix.nix](modules/services/postfix.nix) | `services.postfix` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `CAP_DAC_OVERRIDE` + `CAP_CHOWN` |
+
+### 💬 Messaging
+
+| Module | Service | Key Restrictions |
+|--------|---------|-----------------|
+| [mosquitto.nix](modules/services/mosquitto.nix) | `services.mosquitto` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6`, `StateDirectory` |
+| [matrix-synapse.nix](modules/services/matrix-synapse.nix) | `services.matrix-synapse` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX`, `StateDirectory` |
+
+### 🌐 Networking / DNS / VPN
+
+| Module | Service | Key Restrictions |
+|--------|---------|-----------------|
+| [ssh.nix](modules/services/ssh.nix) | `services.openssh` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX`, `CAP_NET_BIND_SERVICE` + `CAP_SYS_PTRACE` |
+| [dnsmasq.nix](modules/services/dnsmasq.nix) | `services.dnsmasq` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX` + `AF_NETLINK` |
+| [unbound.nix](modules/services/unbound.nix) | `services.unbound` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6`, `StateDirectory` |
+| [bind.nix](modules/services/bind.nix) | `services.bind` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX`, `CAP_NET_BIND_SERVICE` |
+| [avahi.nix](modules/services/avahi.nix) | `services.avahi` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX` + `AF_NETLINK`, `CAP_NET_BIND_SERVICE` |
+| [ntpd.nix](modules/services/ntpd.nix) | `services.ntp` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6`, `CAP_SYS_TIME` + `CAP_NET_BIND_SERVICE` |
+| [chrony.nix](modules/services/chrony.nix) | `services.chrony` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6`, `CAP_SYS_TIME` + `CAP_NET_BIND_SERVICE` |
+| [tor.nix](modules/services/tor.nix) | `services.tor` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX` + `AF_NETLINK`, `CAP_NET_BIND_SERVICE` |
+| [wireguard.nix](modules/services/wireguard.nix) | `networking.wg-quick` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_NETLINK`, `CAP_NET_ADMIN` |
+| [openvpn.nix](modules/services/openvpn.nix) | `services.openvpn` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_NETLINK` + `AF_PACKET`, `CAP_NET_ADMIN` |
+
+### 💾 Storage / File Sharing
+
+| Module | Service | Key Restrictions |
+|--------|---------|-----------------|
+| [samba.nix](modules/services/samba.nix) | `services.samba` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX` + `AF_NETLINK`, broad `CapabilityBoundingSet` |
+| [syncthing.nix](modules/services/syncthing.nix) | `services.syncthing` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX`, `StateDirectory` |
+| [nextcloud.nix](modules/services/nextcloud.nix) | `services.nextcloud` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX`, `StateDirectory` |
+| [minio.nix](modules/services/minio.nix) | `services.minio` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX`, `StateDirectory` |
+
+### 🛡️ Security Tools
+
+| Module | Service | Key Restrictions |
+|--------|---------|-----------------|
+| [fail2ban.nix](modules/services/fail2ban.nix) | `services.fail2ban` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX` + `AF_NETLINK`, `CAP_NET_ADMIN` + `CAP_NET_RAW` |
+| [vaultwarden.nix](modules/services/vaultwarden.nix) | `services.vaultwarden` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX`, `StateDirectory` |
+| [crowdsec.nix](modules/services/crowdsec.nix) | `services.crowdsec` | `ProtectSystem=strict`, `AF_INET` + `AF_INET6` + `AF_UNIX`, `StateDirectory` |
+
+### 🐳 Containers
+
+| Module | Service | Key Restrictions |
+|--------|---------|-----------------|
+| [docker.nix](modules/services/docker.nix) | `virtualisation.docker` | `ProtectControlGroups=false`, `RestrictSUIDSGID=false`, broad `CapabilityBoundingSet` |
+| [containerd.nix](modules/services/containerd.nix) | `virtualisation.containerd` | `ProtectControlGroups=false`, broad `CapabilityBoundingSet` |
+| [podman.nix](modules/services/podman.nix) | `virtualisation.podman` | `ProtectControlGroups=false`, broad `CapabilityBoundingSet` |
+
+### 📝 Logging
+
+| Module | Service | Key Restrictions |
+|--------|---------|-----------------|
+| [rsyslog.nix](modules/services/rsyslog.nix) | `services.rsyslogd` | `ProtectSystem=strict`, `AF_UNIX` + `AF_INET`, `StateDirectory` |
+
+### 🖥️ Desktop Applications (Bubblewrap Sandbox)
+
+| Module | App | Description |
+|--------|-----|-------------|
+| [desktop/default.nix](modules/desktop/default.nix) | All below | `makeBwrapWrapper` helper with conditional Wayland/X11/D-Bus/PipeWire/GPU binds |
+| | **firefox** | Sandboxed browser, `~/.mozilla` + `~/Downloads` |
+| | **chromium** | Sandboxed browser, `~/.config/chromium` + `~/Downloads` |
+| | **brave** | Sandboxed browser, `~/.config/BraveSoftware` + `~/Downloads` |
+| | **chrome** | Sandboxed browser, `~/.config/google-chrome` + `~/Downloads` |
+| | **opera** | Sandboxed browser, `~/.config/opera` + `~/Downloads` |
+| | **vivaldi** | Sandboxed browser, `~/.config/vivaldi` + `~/Downloads` |
+| | **qutebrowser** | Sandboxed browser, `~/.config/qutebrowser` + `~/Downloads` |
+| | **thunderbird** | Sandboxed email, `~/.thunderbird` + `~/Downloads` |
+| | **geary** | Sandboxed email, `~/.config/geary` + `~/Downloads` |
+| | **evolution** | Sandboxed email/PIM, `~/.config/evolution` + `~/Downloads` |
+| | **discord** | Sandboxed chat, `~/.config/discord` + `~/Downloads` |
+| | **signal-desktop** | Sandboxed chat, `~/.config/Signal` + `~/Downloads` |
+| | **element-desktop** | Sandboxed Matrix, `~/.config/Element` + `~/Downloads` |
+| | **telegram-desktop** | Sandboxed Telegram, `~/.local/share/TelegramDesktop` + `~/Downloads` |
+| | **vscode** | Sandboxed editor, `~/.config/Code` + `~/Projects` + `~/.vscode` |
+| | **obsidian** | Sandboxed notes, `~/.config/obsidian` + `~/Documents` |
+| | **notepadqq** | Sandboxed editor, `~/.config/Notepadqq` + `~/Downloads` |
+| | **nautilus** | Sandboxed file manager, `~/.config/nautilus` + `~/Documents` |
+| | **foliate** | Sandboxed ebook reader, `~/.config/com.github.johnfactotum.Foliate` |
+| | **goldendict-ng** | Sandboxed dictionary, `~/.config/goldendict` + `~/Downloads` |
+
+### 🔐 Security Helpers
+
+| Module | Path | Description |
+|--------|------|-------------|
+| **D-Bus Hide Processes** | `modules/security/dbus-hide-processes.nix` | Restrict `GetUnitProcesses` to `proc` group (mitigates systemd info leak with `ProtectProc`) |
+| **Operator User** | `modules/security/operator.nix` | Non-root operator with journal/proc access; optional `doas`/`sudo` run-as |
+
+---
+
+## 🏗️ Architecture
+
+```
+harden-nix/
+├── flake.nix
+├── README.md
+├── checks/
+│   └── default.nix              # NixOS VM tests for regression testing
+└── modules/
+    ├── default.nix              # Baseline preset — imports everything
+    ├── system/
+    │   ├── kernel.nix           # Boot params + sysctl hardening
+    │   ├── network.nix          # Network sysctl + firewall defaults
+    │   └── extra-hardening.nix  # Opt-in strict preset
+    ├── profiles/
+    │   └── systemd-profiles.nix # Reusable security archetypes
+    ├── services/                # Per-service hardening modules
+    ├── desktop/
+    │   └── default.nix          # Desktop app bubblewrap wrappers
+    └── security/
+        ├── dbus-hide-processes.nix
+        └── operator.nix
+```
+
+---
+
+## 🔧 Usage Patterns
+
+### Cherry-Pick Modules
+
+Import only what you need:
+
+```nix
+{ inputs, ... }: {
+  imports = [
+    inputs.harden-nix.nixosModules.kernel
+    (inputs.harden-nix + "/modules/services/nginx.nix")
+  ];
+}
+```
+
+### Per-Service Toggle
+
+Each service module has its own enable switch:
+
+```nix
+{
+  hardening.services.nginx.enable = true;   # default: true when imported
+  hardening.services.mysql.enable = false;  # skip MySQL hardening
+}
+```
+
+### Custom Systemd Archetypes
+
+Apply a reusable profile to your own services:
 
 ```nix
 {
   hardening.systemd.enable = true;
   hardening.systemd.services = {
     my-api.profile = "network-daemon";
+    my-api.allowIPAddresses = "any";
+
     my-worker.profile = "local-worker";
+    my-worker.allowIPAddresses = "local";
+
+    my-web.profile = "web-server";
+    my-db.profile = "database";
   };
 }
 ```
 
-Available profiles:
-- `network-daemon` — internet-facing daemon
-- `local-worker` — background worker, no network (also sets `IPAddressDeny = "any"`)
-- `web-server` — HTTP service (allows `AF_UNIX`)
-- `database` — database service (allows `AF_UNIX`)
+---
 
-Per-service network firewalling (via systemd `IPAddressDeny`/`IPAddressAllow`):
+## 🧪 Verification
 
-```nix
-{
-  hardening.systemd.services = {
-    my-api.profile = "network-daemon";
-    my-api.allowIPAddresses = "any";      # allow all (default for non-local profiles)
-    my-worker.profile = "local-worker";
-    my-worker.allowIPAddresses = "local";   # allow localhost + link-local only
-  };
-}
-```
-
-### Extra Hardening (Opt-in)
-
-Enable the strict preset for additional restrictions on **all** hardened services:
-
-```nix
-{
-  hardening.extra.enable = true;
-}
-```
-
-This adds (to every service module):
-- `ProtectProc = "invisible"` — hide other processes
-- `ProcSubset = "pid"` — only see PID directories
-- `RestrictNamespaces = true` — cannot create new namespaces
-- `RemoveIPC = true` — clean up IPC on exit
-- `SystemCallArchitectures = "native"` — only native-arch syscalls
-
-**Warning:** These options are more restrictive than the baseline and may break services
-that legitimately need namespaces or non-native syscalls. Test each service after enabling.
-
-### D-Bus Process Hiding
-
-Mitigate a systemd issue where `ProtectProc` does not block process info leaks via D-Bus:
-
-```nix
-{
-  hardening.security.dbusHideProcessInformation = true;
-}
-```
-
-This restricts `GetUnitProcesses` to members of the `proc` group.
-
-### Operator User
-
-Create a non-root user with access to service client tools and journals:
-
-```nix
-{
-  hardening.operator = {
-    enable = true;
-    name = "ops";
-    allowRunAsUsers = [ "root" "postgres" ];
-  };
-}
-```
-
-## Desktop Sandboxing (Experimental)
-
-The `desktop-apps` module replaces selected desktop packages with bubblewrap-sandboxed
-wrappers. Each wrapper is generated from a flexible `makeBwrapWrapper` helper that
-conditionally binds the exact resources an app needs:
-
-- **Wayland** — `$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY`
-- **X11** — `/tmp/.X11-unix`, `$DISPLAY`
-- **D-Bus** — session bus (`$XDG_RUNTIME_DIR/bus`) and system bus (`/run/dbus/system_bus_socket`)
-- **PipeWire / PulseAudio** — audio sockets
-- **GPU** — `/dev/dri`, `/dev/kfd` (AMD), `/dev/nvidia*` (NVIDIA)
-- **Fonts, icons, themes, GLib schemas**
-
-```nix
-{
-  hardening.desktopApps = {
-    enable = true;
-    firefox.enable = true;
-    chromium.enable = true;
-    thunderbird.enable = true;
-    discord.enable = true;
-    signal.enable = true;
-  };
-}
-```
-
-**Caveat:** Electron apps (Discord, Signal) may self-update and need broader filesystem
-access. The wrappers are starting points — audit `makeBwrapWrapper` for your specific
-GPU and desktop environment.
-
-## Why Pure-Nix Hardening Beats Runtime Profiling
-
-Tools like [shh](https://github.com/desbma/shh) (Systemd Hardening Helper) use `strace`
-to profile a service at runtime and generate the tightest possible sandbox. This is
-powerful, but the generated options are **non-portable** by construction:
-
-| shh limitation | How `harden-nix` overcomes it |
-|----------------|-----------------------------|
-| **Code path coverage** — misses features not exercised during profiling | We derive policy from the **service's declared intent** (its NixOS options and known data paths), not observed runtime behavior. If `services.nginx.enable = true`, we know it needs `/var/log/nginx`, `/var/cache/nginx`, and `AF_INET`. |
-| **Kernel / libc / systemd version drift** | Our modules are **re-evaluated fresh** against the exact `nixpkgs` input on every build. `SystemCallFilter = "@system-service"` is a well-maintained systemd group that adapts to the host kernel. |
-| **Per-system, non-composable profiles** | Every option is a Nix expression (`lib.mkDefault`, `lib.mkForce`) that composes with user overrides. No static generated files to maintain. |
-| **No verification after generation** | We ship **NixOS VM tests** (`checks/`) that boot a full QEMU system with the hardening enabled and verify the service still functions. This runs on the *exact* kernel, libc, and systemd of the target NixOS release. |
-
-The fundamental difference: `shh` is **empirical** (derive policy from observation);
-`harden-nix` is **declarative** (derive policy from purpose). In a pure-Nix world,
-we already know a service's configuration at evaluation time — we don't need to
-observe it at runtime.
-
-## Research Sources
-
-- **AppArmor upstream profiles** (`gitlab.com/apparmor/apparmor`) — filesystem path
-  patterns, capability requirements, and network abstractions translated into
-  systemd `serviceConfig`, `CapabilityBoundingSet`, and `RestrictAddressFamilies`.
-- **nixos-harden-systemd** (`github.com/thejohncrafter/nixos-harden-systemd`, NLnet
-  funded) — boolean hardening options brute-forced across NixOS VM tests. Informed
-  our addition of `PrivateDevices`, `PrivateMounts`, `ProtectKernelLogs`,
-  `ProtectClock`, `ProtectHostname`, and `PrivateUsers` to the archetype profiles.
-- **shh** (`github.com/desbma/shh`) — strace-based profiling patterns that inspired
-  our understanding of what to harden, and why declarative archetypes are more
-  maintainable than generated per-system profiles.
-- **nix-bitcoin** (`github.com/fort-nix/nix-bitcoin`) — Bitcoin node hardening
-  project that demonstrated production-grade patterns: comprehensive `defaultHardening`
-  attrset (`ProtectProc`, `ProcSubset`, `RestrictNamespaces`, `RemoveIPC`,
-  `SystemCallArchitectures`, `IPAddressDeny`), D-Bus process hiding, operator user
-  pattern, and per-service dedicated users with group-based access control.
-
-## Testing
-
-Run the VM test suite:
+Run the built-in VM tests:
 
 ```bash
 nix flake check
 ```
 
-Tests currently cover:
-- **baselineBoots** — kernel sysctl (`ptrace_scope`, `tcp_syncookies`) verified after boot
-- **nginxHardening** — nginx serves traffic with `ProtectSystem=strict` and `NoNewPrivileges=yes`
-- **mosquittoHardening** — mosquitto broker starts and listens with full hardening enabled
+Available checks:
+- `baselineBoots` — verifies kernel + network hardening boot successfully
+- `nginxHardening` — verifies nginx starts with sandboxing rules applied
+- `mosquittoHardening` — verifies mosquitto starts and listens on port 1883
 
-## Design Notes
+---
 
-- All sysctl values are set with `lib.mkDefault` so you can override them easily.
-- Where hardening values conflict with NixOS defaults, we use `mapAttrs (_: v: mkForce v)`
-  to ensure the hardening module wins.
-- Auto-hardening options default to `true` but only take effect when the target service is actually enabled.
-- Desktop sandboxing is opt-in (`default = false` in the baseline) because it visibly changes how applications launch.
-- `CapabilityBoundingSet` is explicitly declared per service (inspired by AppArmor capability rules) rather than relying on blanket defaults.
+## 📋 Adding a New Service Module
 
-## Contributing
+1. Create `modules/services/<service-name>.nix`:
 
-Add new service hardening modules under `modules/services/`. Follow the existing pattern:
-- guard with `(cfg.enable && config.services.<name>.enable)`
-- apply only `serviceConfig` hardening directives
-- do not harden core system infrastructure (display-manager, dbus-broker, nix-daemon, etc.)
-- prefer `StateDirectory`, `LogsDirectory`, `RuntimeDirectory` over bare `ReadWritePaths`
-  so systemd creates the directories automatically
+```nix
+{ config, lib, pkgs, ... }:
+
+with lib;
+
+let
+  cfg = config.hardening.services.myservice;
+  extraHardening = lib.optionalAttrs (config.hardening.extra.enable or false)
+    config.hardening._extraServiceConfig;
+in
+{
+  options.hardening.services.myservice = {
+    enable = mkEnableOption "my service hardening" // { default = true; };
+  };
+
+  config = mkIf (cfg.enable && config.services.myservice.enable) {
+    systemd.services.myservice.serviceConfig = {
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      PrivateTmp = true;
+      NoNewPrivileges = true;
+      ProtectKernelTunables = true;
+      ProtectKernelModules = true;
+      ProtectControlGroups = true;
+      RestrictRealtime = true;
+      RestrictSUIDSGID = true;
+      LockPersonality = true;
+      MemoryDenyWriteExecute = true;
+      RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
+      SystemCallFilter = [ "@system-service" "~@debug" "~@cpu-emulation" "~@obsolete" "~@reboot" ];
+      CapabilityBoundingSet = [ "CAP_NET_BIND_SERVICE" ];
+      ReadWritePaths = [ "/var/lib/myservice" ];
+      UMask = "0027";
+    } // extraHardening;
+  };
+}
+```
+
+2. Import it in `modules/default.nix`.
+
+3. Add a VM test in `checks/default.nix` (optional but recommended).
+
+---
+
+## 🏠 Home Manager Integration
+
+While `harden-nix` is primarily a NixOS flake, you can use the desktop sandboxing in Home Manager by wrapping packages:
+
+```nix
+{ pkgs, ... }:
+
+let
+  makeBwrapWrapper = pkgs.callPackage
+    (builtins.fetchGit {
+      url = "https://github.com/stefan-hacks/harden-nix";
+      ref = "main";
+    } + "/modules/desktop/default.nix")
+    {};
+in
+{
+  home.packages = [
+    (makeBwrapWrapper {
+      pkg = pkgs.firefox;
+      homeDir = ".mozilla";
+    })
+  ];
+}
+```
+
+> **Note:** Full Home Manager support is planned. For now, import the flake as a NixOS module.
+
+---
+
+## 📚 Research Sources
+
+- **AppArmor upstream profiles** (`gitlab.com/apparmor/apparmor`) — filesystem path patterns, capability requirements, and network abstractions translated into systemd `serviceConfig`, `CapabilityBoundingSet`, and `RestrictAddressFamilies`.
+- **nixos-harden-systemd** (`github.com/thejohncrafter/nixos-harden-systemd`, NLnet funded) — boolean hardening options brute-forced across NixOS VM tests.
+- **shh** (`github.com/desbma/shh`) — strace-based profiling patterns that informed our declarative archetype approach.
+- **nix-bitcoin** (`github.com/fort-nix/nix-bitcoin`) — Production-grade patterns: `ProtectProc`, `ProcSubset`, `RestrictNamespaces`, D-Bus hiding, operator user, netns isolation.
+
+---
+
+## ⚖️ License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+<p align="center">
+  Built with ❄️ for the NixOS community.
+</p>

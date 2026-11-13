@@ -209,8 +209,64 @@ in
       enable = mkEnableOption "sandboxed Discord wrapper" // { default = cfg.enable; };
     };
 
-    signal = {
-      enable = mkEnableOption "sandboxed Signal Desktop wrapper" // { default = cfg.enable; };
+    brave = {
+      enable = mkEnableOption "sandboxed Brave wrapper" // { default = cfg.enable; };
+    };
+
+    chrome = {
+      enable = mkEnableOption "sandboxed Google Chrome wrapper" // { default = cfg.enable; };
+    };
+
+    opera = {
+      enable = mkEnableOption "sandboxed Opera wrapper" // { default = cfg.enable; };
+    };
+
+    vivaldi = {
+      enable = mkEnableOption "sandboxed Vivaldi wrapper" // { default = cfg.enable; };
+    };
+
+    qutebrowser = {
+      enable = mkEnableOption "sandboxed qutebrowser wrapper" // { default = cfg.enable; };
+    };
+
+    geary = {
+      enable = mkEnableOption "sandboxed Geary wrapper" // { default = cfg.enable; };
+    };
+
+    evolution = {
+      enable = mkEnableOption "sandboxed Evolution wrapper" // { default = cfg.enable; };
+    };
+
+    element-desktop = {
+      enable = mkEnableOption "sandboxed Element Desktop wrapper" // { default = cfg.enable; };
+    };
+
+    telegram = {
+      enable = mkEnableOption "sandboxed Telegram Desktop wrapper" // { default = cfg.enable; };
+    };
+
+    vscode = {
+      enable = mkEnableOption "sandboxed VS Code wrapper" // { default = cfg.enable; };
+    };
+
+    obsidian = {
+      enable = mkEnableOption "sandboxed Obsidian wrapper" // { default = cfg.enable; };
+    };
+
+    notepadqq = {
+      enable = mkEnableOption "sandboxed Notepadqq wrapper" // { default = cfg.enable; };
+    };
+
+    nautilus = {
+      enable = mkEnableOption "sandboxed Nautilus wrapper" // { default = cfg.enable; };
+    };
+
+    foliate = {
+      enable = mkEnableOption "sandboxed Foliate wrapper" // { default = cfg.enable; };
+    };
+
+    goldendict = {
+      enable = mkEnableOption "sandboxed GoldenDict wrapper" // { default = cfg.enable; };
     };
   };
 
@@ -250,6 +306,111 @@ in
         makeBwrapWrapper {
           pkg = pkgs.signal-desktop;
           homeDir = ".config/Signal";
+          extraReadWritePaths = [ "$HOME/Downloads" ];
+        }
+      )
+      ++ lib.optional cfg.brave.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.brave;
+          homeDir = ".config/BraveSoftware";
+          extraReadWritePaths = [ "$HOME/Downloads" ];
+        }
+      )
+      ++ lib.optional cfg.chrome.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.google-chrome;
+          homeDir = ".config/google-chrome";
+          extraReadWritePaths = [ "$HOME/Downloads" ];
+        }
+      )
+      ++ lib.optional cfg.opera.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.opera;
+          homeDir = ".config/opera";
+          extraReadWritePaths = [ "$HOME/Downloads" ];
+        }
+      )
+      ++ lib.optional cfg.vivaldi.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.vivaldi;
+          homeDir = ".config/vivaldi";
+          extraReadWritePaths = [ "$HOME/Downloads" ];
+        }
+      )
+      ++ lib.optional cfg.qutebrowser.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.qutebrowser;
+          homeDir = ".config/qutebrowser";
+          extraReadWritePaths = [ "$HOME/Downloads" ];
+        }
+      )
+      ++ lib.optional cfg.geary.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.geary;
+          homeDir = ".config/geary";
+          extraReadWritePaths = [ "$HOME/Downloads" "$HOME/.local/share" ];
+        }
+      )
+      ++ lib.optional cfg.evolution.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.evolution;
+          homeDir = ".config/evolution";
+          extraReadWritePaths = [ "$HOME/Downloads" "$HOME/.local/share" ];
+        }
+      )
+      ++ lib.optional cfg.element-desktop.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.element-desktop;
+          homeDir = ".config/Element";
+          extraReadWritePaths = [ "$HOME/Downloads" ];
+        }
+      )
+      ++ lib.optional cfg.telegram.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.telegram-desktop;
+          homeDir = ".local/share/TelegramDesktop";
+          extraReadWritePaths = [ "$HOME/Downloads" ];
+        }
+      )
+      ++ lib.optional cfg.vscode.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.vscode;
+          homeDir = ".config/Code";
+          extraReadWritePaths = [ "$HOME/Downloads" "$HOME/Projects" "$HOME/.vscode" ];
+        }
+      )
+      ++ lib.optional cfg.obsidian.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.obsidian;
+          homeDir = ".config/obsidian";
+          extraReadWritePaths = [ "$HOME/Downloads" "$HOME/Documents" "$HOME/obsidian" ];
+        }
+      )
+      ++ lib.optional cfg.notepadqq.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.notepadqq;
+          homeDir = ".config/Notepadqq";
+          extraReadWritePaths = [ "$HOME/Downloads" ];
+        }
+      )
+      ++ lib.optional cfg.nautilus.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.nautilus;
+          homeDir = ".config/nautilus";
+          extraReadWritePaths = [ "$HOME/Downloads" "$HOME/Documents" ];
+        }
+      )
+      ++ lib.optional cfg.foliate.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.foliate;
+          homeDir = ".config/com.github.johnfactotum.Foliate";
+          extraReadWritePaths = [ "$HOME/Downloads" "$HOME/Documents" ];
+        }
+      )
+      ++ lib.optional cfg.goldendict.enable (
+        makeBwrapWrapper {
+          pkg = pkgs.goldendict-ng;
+          homeDir = ".config/goldendict";
           extraReadWritePaths = [ "$HOME/Downloads" ];
         }
       );
